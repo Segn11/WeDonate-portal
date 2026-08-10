@@ -1,0 +1,6 @@
+{
+  "name": "We Donate - Adama City Administration",
+  "description": "Digitized community support, beneficiary verification, donation management, distribution tracking, and transparency platform for Adama City Administration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
