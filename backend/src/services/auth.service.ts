@@ -135,6 +135,9 @@ export class AuthService {
           },
         });
       } else {
+        const isVerified = data.role === 'DONOR';
+        const status = isVerified ? 'ACTIVE' : 'PENDING_VERIFICATION';
+
         user = await prisma.user.create({
           data: {
             fullName,
@@ -144,8 +147,8 @@ export class AuthService {
             avatarUrl,
             googleConnected: true,
             googleId,
-            isVerified: true,
-            status: 'ACTIVE',
+            isVerified,
+            status,
           },
         });
       }

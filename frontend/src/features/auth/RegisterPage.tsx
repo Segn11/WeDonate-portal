@@ -365,7 +365,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onGoToLogin, onBackT
       <GoogleAuthModal
         isOpen={showGoogleModal}
         onClose={() => setShowGoogleModal(false)}
-        defaultRole={role === 'DONOR' && donorType === 'NGO' ? 'NGO_ORGANIZATION' : role}
+        defaultRole={role}
         mode="REGISTER"
       />
     </div>
