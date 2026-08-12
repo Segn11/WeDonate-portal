@@ -1,6 +1,7 @@
 import { prisma } from '../prisma/client';
 import { RequestStatus, SupportCategory, UrgencyLevel } from '@prisma/client';
 import { generateRequestNumber } from '../utils/codeGenerator';
+import { NotificationService } from './notification.service';
 
 export class RequestService {
   static async getAllRequests(filters: {
@@ -147,13 +148,50 @@ export class RequestService {
       updateData.rejectionReason = rejectionReason || comment;
     }
 
-    return prisma.beneficiaryRequest.update({
+    const updated = await prisma.beneficiaryRequest.update({
       where: { id: requestId },
       data: updateData,
       include: {
         statusHistory: { orderBy: { updatedAt: 'desc' } },
       },
     });
+
+    // Create notifications based on status change
+    if (newStatus === 'APPROVED_BY_KEBELE') {
+      await NotificationService.create({
+        userId: existing.beneficiaryId,
+        title: 'Request Approved by Kebele',
+        message: `Your request "${existing.title}" has been approved by Kebele administration. It is now under Woreda review.`,
+        type: 'SUCCESS',
+        link: `/requests/${requestId}`,
+      });
+    } else if (newStatus === 'APPROVED_PUBLISHED') {
+      await NotificationService.create({
+        userId: existing.beneficiaryId,
+        title: 'Request Published for Donations',
+        message: `Your request "${existing.title}" has been approved by Woreda and is now published for public donations.`,
+        type: 'SUCCESS',
+        link: `/requests/${requestId}`,
+      });
+    } else if (newStatus === 'REJECTED') {
+      await NotificationService.create({
+        userId: existing.beneficiaryId,
+        title: 'Request Rejected',
+        message: `Your request "${existing.title}" was rejected. Reason: ${rejectionReason || comment}`,
+        type: 'WARNING',
+        link: `/requests/${requestId}`,
+      });
+    } else if (newStatus === 'FULLY_FUNDED') {
+      await NotificationService.create({
+        userId: existing.beneficiaryId,
+        title: 'Request Fully Funded',
+        message: `Your request "${existing.title}" is fully funded and ready for distribution.`,
+        type: 'SUCCESS',
+        link: `/requests/${requestId}`,
+      });
+    }
+
+    return updated;
   }
 
   static async checkDuplicateNationalId(nationalId: string, currentRequestId?: string) {

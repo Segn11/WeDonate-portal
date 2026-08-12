@@ -1,5 +1,6 @@
 import { prisma } from '../prisma/client';
 import { generateDistributionNumber, generateReceiptVerificationCode } from '../utils/codeGenerator';
+import { NotificationService } from './notification.service';
 
 export class DistributionService {
   static async getAll(kebele?: string) {
@@ -46,6 +47,10 @@ export class DistributionService {
     const distributionNumber = generateDistributionNumber();
     const receiptVerificationCode = generateReceiptVerificationCode(data.kebele);
 
+    const request = await prisma.beneficiaryRequest.findUnique({
+      where: { id: data.requestId },
+    });
+
     // First, mark request as IN_DISTRIBUTION
     await prisma.beneficiaryRequest.update({
       where: { id: data.requestId },
@@ -60,6 +65,17 @@ export class DistributionService {
         },
       },
     });
+
+    // Notify beneficiary about distribution
+    if (request) {
+      await NotificationService.create({
+        userId: request.beneficiaryId,
+        title: 'Distribution in Progress',
+        message: `Your support items for "${request.title}" are being distributed. Receipt code: ${receiptVerificationCode}`,
+        type: 'INFO',
+        link: `/distributions/${distributionNumber}`,
+      });
+    }
 
     const distribution = await prisma.distributionRecord.create({
       data: {
@@ -93,6 +109,17 @@ export class DistributionService {
         },
       },
     });
+
+    // Notify beneficiary about completion
+    if (request) {
+      await NotificationService.create({
+        userId: request.beneficiaryId,
+        title: 'Distribution Completed',
+        message: `Your support items for "${request.title}" have been successfully distributed. Thank you for using Adama Support Portal.`,
+        type: 'SUCCESS',
+        link: `/distributions/${distributionNumber}`,
+      });
+    }
 
     return distribution;
   }

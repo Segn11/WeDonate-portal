@@ -1,6 +1,7 @@
 import { prisma } from '../prisma/client';
 import { DonationType, PaymentMethod, SupportCategory, DonorClassification } from '@prisma/client';
 import { generateDonationNumber } from '../utils/codeGenerator';
+import { NotificationService } from './notification.service';
 
 export class DonationService {
   static async getAll(donorId?: string, requestId?: string) {
@@ -107,6 +108,26 @@ export class DonationService {
             status: newStatus,
           },
         });
+
+        // Notify beneficiary about new donation
+        await NotificationService.create({
+          userId: targetReq.beneficiaryId,
+          title: 'New Donation Received',
+          message: `${data.donorName} donated ${data.amountEtb?.toLocaleString()} ETB to your request "${targetReq.title}". Total raised: ${newRaised.toLocaleString()} ETB.`,
+          type: 'SUCCESS',
+          link: `/requests/${data.requestId}`,
+        });
+
+        // Notify if request is fully funded
+        if (newStatus === 'FULLY_FUNDED') {
+          await NotificationService.create({
+            userId: targetReq.beneficiaryId,
+            title: 'Request Fully Funded!',
+            message: `Your request "${targetReq.title}" has been fully funded with ${newRaised.toLocaleString()} ETB. Distribution will be scheduled soon.`,
+            type: 'SUCCESS',
+            link: `/requests/${data.requestId}`,
+          });
+        }
       }
     }
 
