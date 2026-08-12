@@ -126,13 +126,24 @@ export class AuthService {
       });
 
       if (user) {
+        // Update role and verification status if provided and different from current
+        const updateData: any = {
+          googleConnected: true,
+          googleId: googleId,
+          avatarUrl: user.avatarUrl || avatarUrl,
+        };
+
+        if (data.role && user.role !== data.role) {
+          updateData.role = data.role;
+          // Update verification status based on new role
+          const isVerified = data.role === 'DONOR';
+          updateData.isVerified = isVerified;
+          updateData.status = isVerified ? 'ACTIVE' : 'PENDING_VERIFICATION';
+        }
+
         user = await prisma.user.update({
           where: { id: user.id },
-          data: {
-            googleConnected: true,
-            googleId: googleId,
-            avatarUrl: user.avatarUrl || avatarUrl,
-          },
+          data: updateData,
         });
       } else {
         const isVerified = data.role === 'DONOR';
