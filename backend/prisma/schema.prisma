@@ -108,7 +108,7 @@ model RequestDocument {
 model Donation {
   id                  String               @id @default(uuid())
   donationNumber      String               @unique
-  donorId             String
+  donorId             String?
   donorName           String
   donorEmail          String
   donorType           DonorClassification  @default(INDIVIDUAL)
@@ -126,7 +126,7 @@ model Donation {
   receiptUrl          String?
   createdAt           DateTime             @default(now())
   distributions       DistributionRecord[]
-  donor               User                 @relation(fields: [donorId], references: [id])
+  donor               User?                @relation(fields: [donorId], references: [id])
   request             BeneficiaryRequest?  @relation(fields: [requestId], references: [id])
 
   @@map("donations")

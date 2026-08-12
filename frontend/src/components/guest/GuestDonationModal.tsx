@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BeneficiaryRequest, PaymentMethod, DonationType } from '../../types';
+import { useData } from '../../context/DataContext';
 import {
   Heart,
   DollarSign,
@@ -10,6 +11,8 @@ import {
   CreditCard,
   Mail,
   User,
+  ShieldCheck,
+  Building2,
 } from 'lucide-react';
 
 interface GuestDonationModalProps {
@@ -23,7 +26,11 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { requests } = useData();
   const [step, setStep] = useState<number>(1);
+  const [selectedRequestId, setSelectedRequestId] = useState<string>(
+    preselectedRequest?.id || ''
+  );
   const [donorName, setDonorName] = useState<string>('');
   const [donorEmail, setDonorEmail] = useState<string>('');
   const [donationType, setDonationType] = useState<DonationType>('MONEY');
@@ -33,12 +40,20 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
   const [txRef, setTxRef] = useState<string>(`TLB-${Math.floor(10000000 + Math.random() * 90000000)}`);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Available published requests for selection
+  const activeRequests = requests.filter((r) =>
+    ['APPROVED_PUBLISHED', 'PARTIALLY_FUNDED'].includes(r.status)
+  );
+
+  const selectedReqObj =
+    activeRequests.find((r) => r.id === selectedRequestId) || preselectedRequest;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
       
       const response = await fetch(`${API_BASE_URL}/donations/guest`, {
         method: 'POST',
@@ -48,8 +63,8 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
         body: JSON.stringify({
           donorName: donorName || 'Anonymous Contributor',
           donorEmail: donorEmail || 'guest@adama.gov.et',
-          requestId: preselectedRequest?.id || undefined,
-          targetCategory: preselectedRequest?.category || 'FOOD_SUPPLIES',
+          requestId: selectedReqObj?.id || undefined,
+          targetCategory: selectedReqObj?.category || 'FOOD_SUPPLIES',
           type: donationType,
           amountEtb: donationType === 'MONEY' ? amountEtb : undefined,
           itemsDescription: donationType !== 'MONEY' ? itemsDesc : undefined,
@@ -62,7 +77,7 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
         throw new Error('Failed to create donation');
       }
 
-      const data = await response.json();
+      await response.json();
       setIsSubmitting(false);
       setStep(3); // Success step
     } catch (error) {
@@ -97,17 +112,22 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
           {/* Step 1: Guest Information */}
           {step === 1 && (
             <div className="space-y-4">
-              <h4 className="font-extrabold text-slate-900 text-sm">
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span><strong>No registration or login needed!</strong> You can donate directly as a guest.</span>
+              </div>
+
+              <h4 className="font-extrabold text-slate-900 text-sm pt-1">
                 Your Information (Optional)
               </h4>
               <p className="text-xs text-slate-500">
-                You can donate anonymously or provide your details for receipt purposes.
+                Provide your details for receipt generation, or leave blank to stay anonymous.
               </p>
 
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Your Name
+                    Your Name (Optional)
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -123,7 +143,7 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Email (for digital receipt)
+                    Email for Digital Receipt (Optional)
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -141,9 +161,9 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
               >
-                <span>Continue to Donation</span>
+                <span>Continue to Donation Details</span>
                 <span className="text-emerald-200">→</span>
               </button>
             </div>
@@ -153,17 +173,47 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
           {step === 2 && (
             <div className="space-y-4">
               <h4 className="font-extrabold text-slate-900 text-sm">
-                Donation Details
+                Select Cause & Amount
               </h4>
 
-              {preselectedRequest && (
+              {/* Target Cause Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Target Support Cause / Beneficiary
+                </label>
+                <select
+                  value={selectedRequestId}
+                  onChange={(e) => setSelectedRequestId(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">🏛️ General Adama Municipal Relief Fund</option>
+                  {activeRequests.map((req) => (
+                    <option key={req.id} value={req.id}>
+                      {req.urgency === 'CRITICAL' ? '🚨 [URGENT] ' : '❤️ '}
+                      {req.title} — {req.beneficiaryName} ({req.kebele})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedReqObj && (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                  <p className="text-xs font-bold text-emerald-900">
-                    Supporting: {preselectedRequest.title}
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold text-emerald-900 line-clamp-1">
+                      Supporting: {selectedReqObj.title}
+                    </p>
+                    {selectedReqObj.urgency === 'CRITICAL' && (
+                      <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-md shrink-0">
+                        CRITICAL NEED
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-emerald-700 mt-1">
+                    Beneficiary: <strong>{selectedReqObj.beneficiaryName}</strong> • {selectedReqObj.kebele}, {selectedReqObj.woreda}
                   </p>
-                  <p className="text-[10px] text-emerald-700 mt-0.5">
-                    {preselectedRequest.beneficiaryName} • {preselectedRequest.kebele}
-                  </p>
+                  <div className="mt-2 text-[10px] text-emerald-800 font-medium">
+                    Target Goal: ETB {selectedReqObj.estimatedAmountNeededEtb.toLocaleString()} (Raised: ETB {(selectedReqObj.amountRaisedEtb || 0).toLocaleString()})
+                  </div>
                 </div>
               )}
 

@@ -59,12 +59,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       (selectedCategoryFilter === 'ALL' || r.category === selectedCategoryFilter)
   );
 
-  // Filter critical urgency requests for emergency section
-  const criticalRequests = requests.filter(
+  // Filter critical urgency requests for emergency section with fallback
+  let criticalRequests = requests.filter(
     (r) =>
       r.urgency === 'CRITICAL' &&
       ['APPROVED_PUBLISHED', 'PARTIALLY_FUNDED'].includes(r.status)
-  ).slice(0, 3);
+  );
+
+  // Fallback: If fewer than 3 explicit CRITICAL requests, include HIGH urgency or top active requests
+  if (criticalRequests.length < 3) {
+    const secondary = requests.filter(
+      (r) =>
+        ['APPROVED_PUBLISHED', 'PARTIALLY_FUNDED'].includes(r.status) &&
+        !criticalRequests.some((c) => c.id === r.id)
+    );
+    criticalRequests = [...criticalRequests, ...secondary].slice(0, 3);
+  }
 
   // Stats calculation
   const totalRaisedEtb = requests.reduce((acc, r) => acc + (r.amountRaisedEtb || 0), 0) + 1450000;

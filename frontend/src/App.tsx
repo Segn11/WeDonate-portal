@@ -25,7 +25,7 @@ import { BeneficiaryRequest, Donation } from './types';
 
 const MainAppContent: React.FC = () => {
   const { currentUser } = useAuth();
-  const { donations, requests } = useData();
+  const { donations, requests, refetchRequests } = useData();
 
   // Navigation and auth view state
   const [authView, setAuthView] = useState<'LANDING' | 'LOGIN' | 'REGISTER'>('LANDING');
@@ -101,7 +101,7 @@ const MainAppContent: React.FC = () => {
             onClose={() => setShowDonateModal(false)}
             onSuccess={() => {
               setShowDonateModal(false);
-              // Optionally show a success message or redirect
+              refetchRequests();
             }}
           />
         )}

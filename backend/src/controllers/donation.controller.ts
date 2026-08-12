@@ -30,7 +30,7 @@ export class DonationController {
       const donation = await DonationService.createDonation({
         ...req.body,
         donorId: null, // Guest donations don't have a user ID
-        donorType: 'GUEST',
+        donorType: req.body.donorType || 'INDIVIDUAL',
       });
       return sendSuccess(res, donation, 'Guest donation processed successfully', 201);
     } catch (error) {
