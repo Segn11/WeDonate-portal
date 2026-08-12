@@ -37,8 +37,8 @@ export const CityAdminDashboard: React.FC = () => {
   const [userSearch, setUserSearch] = useState('');
   const [logSearch, setLogSearch] = useState('');
 
-  const totalFundsEtb = donations.reduce((sum, d) => sum + (d.amountEtb || 0), 0);
-  const totalVerifiedBeneficiaries = requests.filter(
+  const totalFundsEtb = (donations || []).reduce((sum, d) => sum + (d.amountEtb || 0), 0);
+  const totalVerifiedBeneficiaries = (requests || []).filter(
     (r) => r.status === 'APPROVED_PUBLISHED' || r.status === 'COMPLETED'
   ).length;
 
@@ -52,14 +52,14 @@ export const CityAdminDashboard: React.FC = () => {
     { kebele: 'Kebele 14', amount: 19000 },
   ];
 
-  const filteredUsers = users.filter(
+  const filteredUsers = (users || []).filter(
     (u) =>
       u.fullName.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.role.toLowerCase().includes(userSearch.toLowerCase())
   );
 
-  const filteredLogs = auditLogs.filter(
+  const filteredLogs = (auditLogs || []).filter(
     (l) =>
       l.userName.toLowerCase().includes(logSearch.toLowerCase()) ||
       l.action.toLowerCase().includes(logSearch.toLowerCase()) ||

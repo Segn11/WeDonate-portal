@@ -24,11 +24,11 @@ export const WoredaAdminDashboard: React.FC = () => {
   const myWoreda = currentUser?.woreda;
 
   // Requests that passed Kebele review and await Woreda final approval
-  const pendingWoredaReview = requests.filter(
+  const pendingWoredaReview = (requests || []).filter(
     (r) => myWoreda && r.woreda === myWoreda && (r.status === 'APPROVED_BY_KEBELE' || r.status === 'UNDER_WOREDA_REVIEW')
   );
 
-  const publishedInWoreda = requests.filter(
+  const publishedInWoreda = (requests || []).filter(
     (r) => myWoreda && r.woreda === myWoreda && (r.status === 'APPROVED_PUBLISHED' || r.status === 'PARTIALLY_FUNDED' || r.status === 'FULLY_FUNDED')
   );
 
