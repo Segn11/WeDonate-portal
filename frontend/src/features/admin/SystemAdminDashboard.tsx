@@ -28,7 +28,7 @@ export const SystemAdminDashboard: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'OVERVIEW' | 'PROVISIONING' | 'SECURITY' | 'INTEGRATIONS' | 'AUDIT'>('OVERVIEW');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Provisioning Modal State
   const [showProvisionModal, setShowProvisionModal] = useState(false);
   const [newAdminName, setNewAdminName] = useState('');
@@ -45,7 +45,7 @@ export const SystemAdminDashboard: React.FC = () => {
   const [ipWhitelist, setIpWhitelist] = useState('10.240.0.0/16, 196.188.0.0/16');
   const [backupSchedule, setBackupSchedule] = useState('Daily at 02:00 EAT');
 
-  const adminUsers = users.filter((u) =>
+  const adminUsers = (users || []).filter((u) =>
     ['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'].includes(u.role)
   );
 
