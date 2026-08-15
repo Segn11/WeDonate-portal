@@ -37,10 +37,14 @@ export const distributionApi = {
     const params = new URLSearchParams();
     if (kebele) params.append('kebele', kebele);
 
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/distributions?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-      },
+      headers,
     });
 
     if (!response.ok) {

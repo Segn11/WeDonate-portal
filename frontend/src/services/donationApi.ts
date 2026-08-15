@@ -44,10 +44,14 @@ export const donationApi = {
     if (donorId) params.append('donorId', donorId);
     if (requestId) params.append('requestId', requestId);
 
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/donations?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-      },
+      headers,
     });
 
     if (!response.ok) {
