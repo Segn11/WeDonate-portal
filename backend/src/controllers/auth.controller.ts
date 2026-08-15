@@ -61,6 +61,9 @@ export class AuthController {
     try {
       const { currentPassword, newPassword } = req.body;
       const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
       const result = await AuthService.changePassword(userId, currentPassword, newPassword);
       return sendSuccess(res, result, 'Password changed successfully');
     } catch (error: any) {

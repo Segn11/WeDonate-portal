@@ -161,10 +161,11 @@ export class UserController {
   static async updateUserStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const { status, isVerified } = req.body;
 
       const updatedUser = await prisma.user.update({
-        where: { id },
+        where: { id: idStr },
         data: {
           ...(status && { status: Array.isArray(status) ? status[0] : status }),
           ...(isVerified !== undefined && { isVerified }),
@@ -189,17 +190,19 @@ export class UserController {
   static async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const currentUserId = req.user?.id;
       const currentUserRole = req.user?.role;
 
       // Users can only view their own profile unless they are admins
-      if (id !== currentUserId && 
+      if (idStr !== currentUserId && 
+          currentUserRole && 
           !['CITY_ADMIN', 'SYSTEM_ADMIN', 'WOREDA_ADMIN', 'KEBELE_ADMIN'].includes(currentUserRole)) {
         return sendError(res, 'Access denied. You can only view your own profile.', 403);
       }
 
       const user = await prisma.user.findUnique({
-        where: { id },
+        where: { id: idStr },
         select: {
           id: true,
           fullName: true,
@@ -245,11 +248,13 @@ export class UserController {
   static async updateUserById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const currentUserId = req.user?.id;
       const currentUserRole = req.user?.role;
 
       // Users can only update their own profile unless they are admins
-      if (id !== currentUserId && 
+      if (idStr !== currentUserId && 
+          currentUserRole && 
           !['CITY_ADMIN', 'SYSTEM_ADMIN', 'WOREDA_ADMIN', 'KEBELE_ADMIN'].includes(currentUserRole)) {
         return sendError(res, 'Access denied. You can only update your own profile.', 403);
       }
@@ -285,13 +290,13 @@ export class UserController {
       if (smsNotifications !== undefined) updateData.smsNotifications = smsNotifications;
       
       // Only admins can update these fields
-      if (['CITY_ADMIN', 'SYSTEM_ADMIN', 'WOREDA_ADMIN', 'KEBELE_ADMIN'].includes(currentUserRole)) {
+      if (currentUserRole && ['CITY_ADMIN', 'SYSTEM_ADMIN', 'WOREDA_ADMIN', 'KEBELE_ADMIN'].includes(currentUserRole)) {
         if (status) updateData.status = status;
         if (isVerified !== undefined) updateData.isVerified = isVerified;
       }
 
       const updatedUser = await prisma.user.update({
-        where: { id },
+        where: { id: idStr },
         data: updateData,
         select: {
           id: true,
@@ -323,21 +328,22 @@ export class UserController {
   static async deleteUser(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const currentUserId = req.user?.id;
       const currentUserRole = req.user?.role;
 
       // Only SYSTEM_ADMIN and CITY_ADMIN can delete users
-      if (!['SYSTEM_ADMIN', 'CITY_ADMIN'].includes(currentUserRole)) {
+      if (!currentUserRole || !['SYSTEM_ADMIN', 'CITY_ADMIN'].includes(currentUserRole)) {
         return sendError(res, 'Access denied. Only administrators can delete users.', 403);
       }
 
       // Prevent self-deletion
-      if (id === currentUserId) {
+      if (idStr === currentUserId) {
         return sendError(res, 'Cannot delete your own account.', 400);
       }
 
       await prisma.user.delete({
-        where: { id },
+        where: { id: idStr },
       });
 
       return sendSuccess(res, null, 'User deleted successfully');
@@ -349,22 +355,23 @@ export class UserController {
   static async updateUserRole(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const { role } = req.body;
       const currentUserId = req.user?.id;
       const currentUserRole = req.user?.role;
 
       // Only SYSTEM_ADMIN can change roles
-      if (currentUserRole !== 'SYSTEM_ADMIN') {
+      if (!currentUserRole || currentUserRole !== 'SYSTEM_ADMIN') {
         return sendError(res, 'Access denied. Only SYSTEM_ADMIN can change user roles.', 403);
       }
 
       // Prevent self-role-change
-      if (id === currentUserId) {
+      if (idStr === currentUserId) {
         return sendError(res, 'Cannot change your own role.', 400);
       }
 
       const updatedUser = await prisma.user.update({
-        where: { id },
+        where: { id: idStr },
         data: { role },
         select: {
           id: true,
@@ -384,17 +391,18 @@ export class UserController {
   static async verifyBeneficiary(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const { isVerified, rejectionReason } = req.body;
       const currentUserRole = req.user?.role;
       const currentUserKebele = req.user?.kebele;
 
       // Only KEBELE_ADMIN and above can verify beneficiaries
-      if (!['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'].includes(currentUserRole)) {
+      if (!currentUserRole || !['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'].includes(currentUserRole)) {
         return sendError(res, 'Access denied. Only admin roles can verify beneficiaries.', 403);
       }
 
       const beneficiary = await prisma.user.findUnique({
-        where: { id },
+        where: { id: idStr },
       });
 
       if (!beneficiary) {
@@ -411,7 +419,7 @@ export class UserController {
       }
 
       const updatedUser = await prisma.user.update({
-        where: { id },
+        where: { id: idStr },
         data: {
           isVerified,
           status: isVerified ? 'ACTIVE' : 'PENDING_VERIFICATION',
@@ -441,7 +449,7 @@ export class UserController {
       const currentUserKebele = req.user?.kebele;
 
       // Only admin roles can view beneficiaries by kebele
-      if (!['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'].includes(currentUserRole)) {
+      if (!currentUserRole || !['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'].includes(currentUserRole)) {
         return sendError(res, 'Access denied. Only admin roles can view beneficiaries by kebele.', 403);
       }
 

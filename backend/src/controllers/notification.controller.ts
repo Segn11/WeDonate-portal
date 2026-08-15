@@ -29,7 +29,8 @@ export class NotificationController {
   static async markAsRead(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const notification = await NotificationService.markAsRead(id);
+      const idStr = Array.isArray(id) ? id[0] : id;
+      const notification = await NotificationService.markAsRead(idStr);
       return sendSuccess(res, notification, 'Notification marked as read');
     } catch (error) {
       next(error);
@@ -53,7 +54,8 @@ export class NotificationController {
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      await NotificationService.delete(id);
+      const idStr = Array.isArray(id) ? id[0] : id;
+      await NotificationService.delete(idStr);
       return sendSuccess(res, null, 'Notification deleted');
     } catch (error) {
       next(error);

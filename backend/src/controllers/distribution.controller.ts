@@ -16,7 +16,8 @@ export class DistributionController {
   static async verifyCode(req: Request, res: Response, next: NextFunction) {
     try {
       const { code } = req.params;
-      const result = await DistributionService.verifyReceiptCode(code);
+      const codeStr = Array.isArray(code) ? code[0] : code;
+      const result = await DistributionService.verifyReceiptCode(codeStr);
       return sendSuccess(res, result, 'Verification check completed');
     } catch (error) {
       next(error);
@@ -35,8 +36,9 @@ export class DistributionController {
   static async initiateDistribution(req: Request, res: Response, next: NextFunction) {
     try {
       const { requestId } = req.params;
+      const requestIdStr = Array.isArray(requestId) ? requestId[0] : requestId;
       const { initiatedBy } = req.body;
-      const request = await DistributionService.initiateDistribution(requestId, initiatedBy);
+      const request = await DistributionService.initiateDistribution(requestIdStr, initiatedBy);
       return sendSuccess(res, request, 'Distribution initiated successfully');
     } catch (error) {
       next(error);
@@ -46,8 +48,9 @@ export class DistributionController {
   static async confirmReceipt(req: Request, res: Response, next: NextFunction) {
     try {
       const { distributionId } = req.params;
+      const distributionIdStr = Array.isArray(distributionId) ? distributionId[0] : distributionId;
       const { confirmedBy } = req.body;
-      const distribution = await DistributionService.confirmBeneficiaryReceipt(distributionId, confirmedBy);
+      const distribution = await DistributionService.confirmBeneficiaryReceipt(distributionIdStr, confirmedBy);
       return sendSuccess(res, distribution, 'Beneficiary receipt confirmed successfully');
     } catch (error) {
       next(error);

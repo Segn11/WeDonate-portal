@@ -22,7 +22,8 @@ export class RequestController {
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const request = await RequestService.getById(id);
+      const idStr = Array.isArray(id) ? id[0] : id;
+      const request = await RequestService.getById(idStr);
       return sendSuccess(res, request, 'Fetched request details');
     } catch (error: any) {
       if (error.statusCode) {
@@ -44,11 +45,12 @@ export class RequestController {
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const idStr = Array.isArray(id) ? id[0] : id;
       const { status, comment, rejectionReason } = req.body;
       const updatedBy = req.user?.fullName || 'Official Admin';
 
       const updated = await RequestService.updateStatus(
-        id,
+        idStr,
         status,
         updatedBy,
         comment,
