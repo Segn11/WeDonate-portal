@@ -38,7 +38,7 @@ Official municipal charity management system for Adama City, Ethiopia. This plat
 - **ChatBot FAQ**: Intelligent FAQ system with keyword matching
 - **AI Integration**: Google Gemini AI for advanced query responses
 - **Context-Aware**: Provides relevant answers based on FAQ database
-- **Multi-Language Support**: Designed for Amharic and English content
+- **Multi-Language Support**: Designed for English, Afaan Oromoo and Amharic content
 
 ## 🏗️ Architecture
 
@@ -309,14 +309,14 @@ WeDonate Portal Development Team
 ## 📞 Support & Contact
 
 For technical support:
-- **Email**: tech@adama.gov.et
-- **Phone**: +251 22 111 0000 (ext. 5)
+- **Email**: 
+- **Phone**: +251 
 - **Response Time**: Within 24 hours
 
 For general inquiries:
 - **Email**: support@adama.gov.et
-- **Phone**: +251 22 111 0000 / +251 22 112 0011
-- **Address**: Adama Mayor Cabinet Office, Bole Road
+- **Phone**: +251 
+- **Address**: 
 
 ## 🙏 Acknowledgments
 
