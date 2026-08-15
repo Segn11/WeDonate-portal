@@ -13,11 +13,9 @@ import {
 } from '../types';
 import { requestApi } from '../services/requestApi';
 import { notificationApi } from '../services/notificationApi';
-import {
-  MOCK_DONATIONS,
-  MOCK_DISTRIBUTIONS,
-  MOCK_AUDIT_LOGS,
-} from '../data/mockData';
+import { donationApi } from '../services/donationApi';
+import { distributionApi } from '../services/distributionApi';
+import { auditApi } from '../services/auditApi';
 
 interface DataContextType {
   requests: BeneficiaryRequest[];
@@ -101,25 +99,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchRequests();
   }, []);
 
-  const [donations, setDonations] = useState<Donation[]>(() => {
-    const saved = localStorage.getItem('we_donate_donations');
-    return saved ? JSON.parse(saved) : MOCK_DONATIONS;
-  });
+  const [donations, setDonations] = useState<Donation[]>([]);
 
-  const [distributions, setDistributions] = useState<DistributionRecord[]>(() => {
-    const saved = localStorage.getItem('we_donate_distributions');
-    return saved ? JSON.parse(saved) : MOCK_DISTRIBUTIONS;
-  });
+  // Fetch donations from API on mount
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const data = await donationApi.getAllDonations();
+        setDonations(data);
+      } catch (error) {
+        console.error('Failed to fetch donations:', error);
+      }
+    };
+    fetchDonations();
+  }, []);
+
+  const [distributions, setDistributions] = useState<DistributionRecord[]>([]);
+
+  // Fetch distributions from API on mount
+  useEffect(() => {
+    const fetchDistributions = async () => {
+      try {
+        const data = await distributionApi.getAllDistributions();
+        setDistributions(data);
+      } catch (error) {
+        console.error('Failed to fetch distributions:', error);
+      }
+    };
+    fetchDistributions();
+  }, []);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
 
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    const saved = localStorage.getItem('we_donate_audit_logs');
-    return saved ? JSON.parse(saved) : MOCK_AUDIT_LOGS;
-  });
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
-  // Remove localStorage sync for requests (now using API)
+  // Fetch audit logs from API on mount
+  useEffect(() => {
+    const fetchAuditLogs = async () => {
+      try {
+        const data = await auditApi.getAllAuditLogs();
+        setAuditLogs(data);
+      } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+      }
+    };
+    fetchAuditLogs();
+  }, []);
+
+  // Remove localStorage sync (now using API)
 
   // Fetch notifications from API on mount
   useEffect(() => {
@@ -137,19 +165,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchNotifications();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('we_donate_donations', JSON.stringify(donations));
-  }, [donations]);
 
-  useEffect(() => {
-    localStorage.setItem('we_donate_distributions', JSON.stringify(distributions));
-  }, [distributions]);
-
-  useEffect(() => {
-    localStorage.setItem('we_donate_audit_logs', JSON.stringify(auditLogs));
-  }, [auditLogs]);
-
-  const addAuditLog = (
+  const addAuditLog = async (
     userId: string,
     userName: string,
     role: any,
@@ -158,19 +175,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     details: string,
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW'
   ) => {
-    const newLog: AuditLog = {
-      id: `log-${Date.now()}`,
-      userId,
-      userName,
-      role,
-      action,
-      module,
-      ipAddress: '197.156.98.' + Math.floor(Math.random() * 200 + 10),
-      timestamp: new Date().toISOString(),
-      details,
-      riskLevel,
-    };
-    setAuditLogs((prev) => [newLog, ...prev]);
+    try {
+      const newLog = await auditApi.createAuditLog({
+        userId,
+        userName,
+        role,
+        action,
+        module,
+        ipAddress: '197.156.98.' + Math.floor(Math.random() * 200 + 10),
+        details,
+        riskLevel,
+      });
+      setAuditLogs((prev) => [newLog, ...prev]);
+    } catch (error) {
+      console.error('Failed to create audit log:', error);
+    }
   };
 
   const createRequest = async (
@@ -230,96 +249,88 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const makeDonation = (
+  const makeDonation = async (
     donationData: Omit<
       Donation,
       'id' | 'donationNumber' | 'status' | 'createdAt'
     >
   ) => {
-    const donNum = `DON-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newDonation: Donation = {
-      ...donationData,
-      id: `don-${Date.now()}`,
-      donationNumber: donNum,
-      status: donationData.requestId ? 'CONFIRMED' : 'PENDING',
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const newDonation = await donationApi.createDonation(donationData);
+      setDonations((prev) => [newDonation, ...prev]);
 
-    setDonations((prev) => [newDonation, ...prev]);
+      // If target request exists, update request raised amount
+      if (donationData.requestId && donationData.amountEtb) {
+        setRequests((prev) =>
+          prev.map((r) => {
+            if (r.id !== donationData.requestId) return r;
+            const newRaised = r.amountRaisedEtb + (donationData.amountEtb || 0);
+            let newStatus = r.status;
+            if (newRaised >= r.estimatedAmountNeededEtb) {
+              newStatus = 'FULLY_FUNDED';
+            } else if (newRaised > 0 && r.status === 'APPROVED_PUBLISHED') {
+              newStatus = 'PARTIALLY_FUNDED';
+            }
+            return {
+              ...r,
+              amountRaisedEtb: newRaised,
+              status: newStatus,
+              updatedAt: new Date().toISOString(),
+            };
+          })
+        );
+      }
 
-    // If target request exists, update request raised amount
-    if (donationData.requestId && donationData.amountEtb) {
-      setRequests((prev) =>
-        prev.map((r) => {
-          if (r.id !== donationData.requestId) return r;
-          const newRaised = r.amountRaisedEtb + (donationData.amountEtb || 0);
-          let newStatus = r.status;
-          if (newRaised >= r.estimatedAmountNeededEtb) {
-            newStatus = 'FULLY_FUNDED';
-          } else if (newRaised > 0 && r.status === 'APPROVED_PUBLISHED') {
-            newStatus = 'PARTIALLY_FUNDED';
-          }
-          return {
-            ...r,
-            amountRaisedEtb: newRaised,
-            status: newStatus,
-            updatedAt: new Date().toISOString(),
-          };
-        })
+      // Add Audit Log
+      addAuditLog(
+        donationData.donorId,
+        donationData.donorName,
+        'DONOR',
+        'MAKE_DONATION',
+        'Donation Pipeline',
+        `Donated ${donationData.amountEtb ? donationData.amountEtb + ' ETB' : donationData.itemsDescription} via ${donationData.paymentMethod || 'In-Kind'}`
       );
+
+      return newDonation;
+    } catch (error) {
+      console.error('Failed to create donation:', error);
+      throw error;
     }
-
-    // Add Audit Log
-    addAuditLog(
-      donationData.donorId,
-      donationData.donorName,
-      'DONOR',
-      'MAKE_DONATION',
-      'Donation Pipeline',
-      `Donated ${donationData.amountEtb ? donationData.amountEtb + ' ETB' : donationData.itemsDescription} via ${donationData.paymentMethod || 'In-Kind'}`
-    );
-
-    return newDonation;
   };
 
-  const recordDistribution = (
+  const recordDistribution = async (
     distData: Omit<
       DistributionRecord,
       'id' | 'distributionNumber' | 'completedAt' | 'receiptVerificationCode'
     >
   ) => {
-    const distNum = `DIST-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const verCode = `ADM-K${Math.floor(10 + Math.random() * 80)}-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    try {
+      const newDist = await distributionApi.createDistribution(distData);
+      setDistributions((prev) => [newDist, ...prev]);
 
-    const newDist: DistributionRecord = {
-      ...distData,
-      id: `dist-${Date.now()}`,
-      distributionNumber: distNum,
-      completedAt: new Date().toISOString(),
-      receiptVerificationCode: verCode,
-    };
+      // Update request status to COMPLETED
+      await updateRequestStatus(
+        distData.requestId,
+        'COMPLETED',
+        distData.distributedByKebeleAdmin,
+        'Distribution completed and verified with beneficiary receipt.'
+      );
 
-    setDistributions((prev) => [newDist, ...prev]);
+      // Audit log
+      addAuditLog(
+        'admin-dist',
+        distData.distributedByKebeleAdmin,
+        'KEBELE_ADMIN',
+        'RECORD_DISTRIBUTION',
+        'Distribution Tracking',
+        `Recorded distribution ${newDist.distributionNumber} for ${distData.beneficiaryName} in ${distData.kebele}`
+      );
 
-    // Update request status to COMPLETED
-    updateRequestStatus(
-      distData.requestId,
-      'COMPLETED',
-      distData.distributedByKebeleAdmin,
-      'Distribution completed and verified with beneficiary receipt.'
-    );
-
-    // Audit log
-    addAuditLog(
-      'admin-dist',
-      distData.distributedByKebeleAdmin,
-      'KEBELE_ADMIN',
-      'RECORD_DISTRIBUTION',
-      'Distribution Tracking',
-      `Recorded distribution ${distNum} for ${distData.beneficiaryName} in ${distData.kebele}`
-    );
-
-    return newDist;
+      return newDist;
+    } catch (error) {
+      console.error('Failed to record distribution:', error);
+      throw error;
+    }
   };
 
   const markNotificationRead = async (id: string) => {

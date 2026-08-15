@@ -49,7 +49,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   hideHeader = false,
 }) => {
   const { currentUser } = useAuth();
-  const { requests } = useData();
+  const { requests, donations, distributions } = useData();
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
 
@@ -77,9 +77,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     criticalRequests = [...criticalRequests, ...secondary].slice(0, 3);
   }
 
-  // Stats calculation
-  const totalRaisedEtb = requests.reduce((acc, r) => acc + (r.amountRaisedEtb || 0), 0) + 1450000;
-  const totalBeneficiaries = requests.length * 4 + 4280;
+  // Real stats calculation from actual data
+  const totalRaisedEtb = donations.reduce((acc, d) => acc + (d.amountEtb || 0), 0);
+  
+  // Count unique citizens assisted based on completed distributions
+  const uniqueBeneficiaries = new Set(distributions.map(d => d.beneficiaryName)).size;
+  const totalBeneficiaries = uniqueBeneficiaries > 0 ? uniqueBeneficiaries : 0;
+  
+  // Count unique active kebeles from requests
+  const uniqueKebeles = new Set(requests.map(r => r.kebele)).size;
+  const activeKebeles = uniqueKebeles > 0 ? uniqueKebeles : 0;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
@@ -212,7 +219,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
                       <p className="text-[10px] text-slate-500 font-bold uppercase">Active Kebeles</p>
-                      <p className="text-lg font-extrabold text-slate-900">15 Kebeles</p>
+                      <p className="text-lg font-extrabold text-slate-900">{activeKebeles} Kebeles</p>
                     </div>
                   </div>
 
@@ -317,7 +324,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-slate-900">1.45M+ ETB</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900">
+                {totalRaisedEtb > 0 ? `${(totalRaisedEtb / 1000000).toFixed(2)}M+ ETB` : '0 ETB'}
+              </p>
               <p className="text-xs text-slate-500 font-medium">Direct Financial & Item Aid</p>
             </div>
             <div className="space-y-1">
@@ -325,12 +334,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <p className="text-xs text-slate-500 font-medium">Government ID Poverty Audit</p>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-slate-900">15 Kebeles</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900">{activeKebeles} Kebeles</p>
               <p className="text-xs text-slate-500 font-medium">Adama Municipal Coverage</p>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-amber-600">Digital Receipts</p>
-              <p className="text-xs text-slate-500 font-medium">Downloadable Verification Code</p>
+              <p className="text-2xl sm:text-3xl font-black text-amber-600">{distributions.length}+</p>
+              <p className="text-xs text-slate-500 font-medium">Digital Receipts Issued</p>
             </div>
           </div>
         </div>

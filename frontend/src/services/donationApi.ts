@@ -4,10 +4,10 @@ export interface DonationData {
   donorId: string;
   donorName: string;
   donorEmail: string;
-  donorType?: 'INDIVIDUAL' | 'NGO' | 'CORPORATE' | 'GOVERNMENT';
+  donorType?: 'INDIVIDUAL' | 'COMPANY' | 'NGO' | 'DIASPORA';
   requestId?: string;
   targetCategory?: string;
-  type: 'MONEY' | 'IN_KIND';
+  type: 'MONEY' | 'PHYSICAL_ITEM' | 'SERVICE';
   amountEtb?: number;
   itemsDescription?: string;
   quantity?: number;
