@@ -1,5 +1,5 @@
 import { prisma } from '../prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 interface FAQData {
   question: string;
@@ -11,7 +11,7 @@ interface FAQData {
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const genAI = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
 export class ChatBotService {
   static async getAllFAQs() {
@@ -126,8 +126,6 @@ export class ChatBotService {
           `Q: ${faq.question}\nA: ${faq.answer}\nCategory: ${faq.category}`
         ).join('\n\n');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-        
         const prompt = `You are a helpful assistant for the Adama Support Portal, a municipal charity management system. 
 Use the following FAQ context to answer the user's question. If the answer is not in the context, provide a helpful response based on general knowledge about charity systems and the Adama context.
 
@@ -138,10 +136,16 @@ User Question: ${query}
 
 Provide a clear, helpful response. If the question is about the system, prioritize information from the FAQ context. Keep responses concise and friendly.`;
 
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
+        const result = await genAI.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: prompt,
+        });
         
-        return response;
+        if (result && result.text) {
+          return result.text;
+        }
+        
+        return "I apologize, but I couldn't generate a response. Please try again.";
       } catch (error) {
         console.error('Gemini API error:', error);
         // Fall back to FAQ match if AI fails
