@@ -309,14 +309,14 @@ WeDonate Portal Development Team
 ## 📞 Support & Contact
 
 For technical support:
-- **Email**: tech@adama.gov.et
-- **Phone**: +251 22 111 0000 (ext. 5)
+- **Email**: 
+- **Phone**: +251 
 - **Response Time**: Within 24 hours
 
 For general inquiries:
 - **Email**: support@adama.gov.et
-- **Phone**: +251 22 111 0000 / +251 22 112 0011
-- **Address**: Adama Mayor Cabinet Office, Bole Road
+- **Phone**: +251 
+- **Address**: 
 
 ## 🙏 Acknowledgments
 
