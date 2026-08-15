@@ -126,7 +126,7 @@ export class ChatBotService {
           `Q: ${faq.question}\nA: ${faq.answer}\nCategory: ${faq.category}`
         ).join('\n\n');
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
         
         const prompt = `You are a helpful assistant for the Adama Support Portal, a municipal charity management system. 
 Use the following FAQ context to answer the user's question. If the answer is not in the context, provide a helpful response based on general knowledge about charity systems and the Adama context.
