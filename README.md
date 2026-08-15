@@ -1,6 +1,6 @@
-# WeDonate Portal
+# WeDonate Portal - Adama City Administration
 
-A comprehensive donation management system for Adama City, Ethiopia. This platform connects donors with beneficiaries, streamlining the donation process while ensuring transparency and accountability.
+Official municipal charity management system for Adama City, Ethiopia. This platform digitizes compassion through a secure 3-tier government verification system (Kebele → Woreda → Direct Delivery), ensuring transparent support distribution with full audit trails.
 
 ## 🌟 Features
 
@@ -22,14 +22,23 @@ A comprehensive donation management system for Adama City, Ethiopia. This platfo
 - **Multi-level Administration**: System, City, Woreda, and Kebele admin dashboards
 - **Request Management**: Review, approve, and manage beneficiary requests
 - **Donation Management**: Track and manage all donations
-- **Distribution Tracking**: Monitor distribution of resources
-- **Analytics Dashboard**: Comprehensive reports and analytics
+- **Distribution Tracking**: Monitor distribution of resources with photo verification
+- **Analytics Dashboard**: Comprehensive reports and analytics with real-time metrics
 - **User Management**: Manage users across all roles
+- **Audit Logging**: Complete audit trail for all system actions
+- **Duplicate Detection**: National ID duplicate checking for fraud prevention
 
 ### Transparency Portal
 - **Public Transparency**: View all donations and distributions
 - **Real-time Updates**: Live data on fund allocation
 - **Accountability**: Full traceability of resources
+- **Live Statistics**: Real-time metrics on funds mobilized, citizens assisted, and active kebeles
+
+### AI-Powered Support
+- **ChatBot FAQ**: Intelligent FAQ system with keyword matching
+- **AI Integration**: Google Gemini AI for advanced query responses
+- **Context-Aware**: Provides relevant answers based on FAQ database
+- **Multi-Language Support**: Designed for Amharic and English content
 
 ## 🏗️ Architecture
 
@@ -160,12 +169,14 @@ Frontend will run on `http://localhost:3000`
 ## 📊 Database Schema
 
 The system uses PostgreSQL with the following main models:
-- **User**: System users (donors, beneficiaries, admins)
-- **BeneficiaryRequest**: Assistance requests from beneficiaries
-- **Donation**: Donations from donors (including guest donations)
-- **DistributionRecord**: Distribution of resources to beneficiaries
-- **Notification**: System notifications
-- **Analytics**: System analytics data
+- **User**: System users (donors, beneficiaries, admins) with role-based access
+- **BeneficiaryRequest**: Assistance requests from beneficiaries with 3-tier verification workflow
+- **Donation**: Donations from donors (including guest donations) with payment tracking
+- **DistributionRecord**: Distribution of resources to beneficiaries with photo verification
+- **Notification**: System notifications for users
+- **AuditLog**: Complete audit trail for all system actions
+- **ChatBotFAQ**: FAQ database for AI-powered support chatbot
+- **RequestStatusHistory**: Status change history for beneficiary requests
 
 ## 🔐 Authentication
 
@@ -176,12 +187,31 @@ The system supports multiple authentication methods:
 
 ## 🎯 User Roles
 
-- **DONOR**: Can browse requests and make donations
-- **BENEFICIARY**: Can submit and track assistance requests
-- **SYSTEM_ADMIN**: Full system management
-- **CITY_ADMIN**: City-level administration
-- **WOREDA_ADMIN**: Woreda-level administration
-- **KEBELE_ADMIN**: Kebele-level administration
+- **DONOR**: Can browse requests and make donations (Individual, Company, NGO, Diaspora)
+- **BENEFICIARY**: Can submit and track assistance requests with household information
+- **SYSTEM_ADMIN**: Full system management and IT security
+- **CITY_ADMIN**: City-level administration and executive oversight
+- **WOREDA_ADMIN**: Woreda-level administration and regional approval
+- **KEBELE_ADMIN**: Kebele-level administration and resident verification
+
+## 🔄 3-Tier Verification System
+
+The platform implements a transparent government verification process:
+
+1. **Kebele Verification** (Tier 1)
+   - Citizens submit requests with National/Kebele IDs
+   - Local administrators verify household income and residency
+   - Flag duplicate requests and fraudulent applications
+
+2. **Woreda Endorsement** (Tier 2)
+   - Sub-city supervisors conduct second-tier audit checks
+   - Approve campaigns for public publishing
+   - Ensure regional balance across Adama
+
+3. **Direct Delivery** (Tier 3)
+   - Donations assigned directly to approved requests
+   - Distribution logged with delivery photos and beneficiary signatures
+   - Instant digital receipt verification codes generated
 
 ## 🧪 Testing
 
@@ -232,6 +262,21 @@ http://localhost:5000/api/v1
 - `GET /distributions` - Get all distributions
 - `GET /distributions/:id` - Get distribution by ID
 
+#### Analytics
+- `GET /analytics/overview` - Get system overview statistics
+- `GET /analytics/monthly-trends` - Get monthly donation trends
+- `GET /analytics/category-distribution` - Get category distribution
+- `GET /analytics/kebele-stats` - Get kebele-specific statistics
+
+#### ChatBot
+- `GET /chatbot/faqs` - Get all FAQs
+- `POST /chatbot/ask` - Ask chatbot a question
+- `POST /chatbot/faqs` - Create new FAQ (admin)
+
+#### Audit
+- `GET /audit/logs` - Get all audit logs
+- `POST /audit/logs` - Create audit log
+
 ## 🌐 Deployment
 
 ### Backend Deployment
@@ -261,15 +306,24 @@ This project is licensed under the MIT License.
 
 WeDonate Portal Development Team
 
-## 📞 Support
+## 📞 Support & Contact
 
-For support, please contact the development team or open an issue in the repository.
+For technical support:
+- **Email**: tech@adama.gov.et
+- **Phone**: +251 22 111 0000 (ext. 5)
+- **Response Time**: Within 24 hours
+
+For general inquiries:
+- **Email**: support@adama.gov.et
+- **Phone**: +251 22 111 0000 / +251 22 112 0011
+- **Address**: Adama Mayor Cabinet Office, Bole Road
 
 ## 🙏 Acknowledgments
 
 - Adama City Administration
 - All contributors and supporters
 - The community of donors and beneficiaries
+- Kebele and Woreda administrators for their dedication
 
 ---
 
