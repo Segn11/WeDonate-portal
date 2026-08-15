@@ -38,7 +38,7 @@ Official municipal charity management system for Adama City, Ethiopia. This plat
 - **ChatBot FAQ**: Intelligent FAQ system with keyword matching
 - **AI Integration**: Google Gemini AI for advanced query responses
 - **Context-Aware**: Provides relevant answers based on FAQ database
-- **Multi-Language Support**: Designed for Amharic and English content
+- **Multi-Language Support**: Designed for English, Afaan Oromoo and Amharic content
 
 ## 🏗️ Architecture
 
