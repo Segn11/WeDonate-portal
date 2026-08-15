@@ -75,16 +75,9 @@ export class ChatBotController {
         return res.status(400).json({ success: false, message: 'Query is required' });
       }
 
-      const answer = await ChatBotService.findBestMatch(query);
+      const answer = await ChatBotService.askWithAI(query);
       
-      if (!answer) {
-        return sendSuccess(res, { 
-          answer: "I couldn't find a specific answer to your question. Try asking about donations, applications, or contact information, or reach out to our support team at support@adama.gov.et",
-          found: false 
-        }, 'No exact match found');
-      }
-
-      return sendSuccess(res, { answer, found: true }, 'Answer found');
+      return sendSuccess(res, { answer, found: true }, 'Answer generated');
     } catch (error) {
       next(error);
     }

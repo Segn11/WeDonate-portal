@@ -1,4 +1,5 @@
 import { prisma } from '../prisma/client';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface FAQData {
   question: string;
@@ -8,6 +9,9 @@ interface FAQData {
   priority?: number;
   isActive?: boolean;
 }
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 export class ChatBotService {
   static async getAllFAQs() {
@@ -108,6 +112,52 @@ export class ChatBotService {
     }
 
     return bestMatch ? bestMatch.faq.answer : null;
+  }
+
+  static async askWithAI(query: string): Promise<string> {
+    // First try to find a match in FAQs
+    const faqMatch = await this.findBestMatch(query);
+    
+    // If Gemini API is available, use it for more sophisticated responses
+    if (genAI) {
+      try {
+        const faqs = await this.getAllFAQs();
+        const faqContext = faqs.map((faq: any) => 
+          `Q: ${faq.question}\nA: ${faq.answer}\nCategory: ${faq.category}`
+        ).join('\n\n');
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        
+        const prompt = `You are a helpful assistant for the Adama Support Portal, a municipal charity management system. 
+Use the following FAQ context to answer the user's question. If the answer is not in the context, provide a helpful response based on general knowledge about charity systems and the Adama context.
+
+FAQ Context:
+${faqContext}
+
+User Question: ${query}
+
+Provide a clear, helpful response. If the question is about the system, prioritize information from the FAQ context. Keep responses concise and friendly.`;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response.text();
+        
+        return response;
+      } catch (error) {
+        console.error('Gemini API error:', error);
+        // Fall back to FAQ match if AI fails
+        if (faqMatch) {
+          return faqMatch;
+        }
+        return "I apologize, but I'm having trouble connecting to my AI service. Please try again or contact support@adama.gov.et for assistance.";
+      }
+    }
+    
+    // If no Gemini API, return FAQ match or fallback message
+    if (faqMatch) {
+      return faqMatch;
+    }
+    
+    return "I don't have a specific answer for that question. For more information, please contact our support team at support@adama.gov.et or call +251 22 111 0000.";
   }
 
   static async seedInitialFAQs() {
