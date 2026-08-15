@@ -7,6 +7,7 @@ import metaRoutes from './meta.routes';
 import userRoutes from './user.routes';
 import notificationRoutes from './notification.routes';
 import analyticsRoutes from './analytics.routes';
+import chatbotRoutes from './chatbot.routes';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/meta', metaRoutes);
 router.use('/users', userRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/chatbot', chatbotRoutes);
 
 export default router;

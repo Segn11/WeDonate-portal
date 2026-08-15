@@ -168,6 +168,20 @@ model Notification {
   @@map("notifications")
 }
 
+model ChatBotFAQ {
+  id          String   @id @default(uuid())
+  question    String
+  answer      String
+  keywords    String[]
+  category    String   @default("GENERAL")
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("chatbot_faqs")
+}
+
 model AuditLog {
   id        String    @id @default(uuid())
   userId    String

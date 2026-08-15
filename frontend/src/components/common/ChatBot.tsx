@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { chatbotApi } from '../../services/chatbotApi';
 import {
   MessageCircle,
   X,
@@ -7,12 +8,6 @@ import {
   User,
   ChevronDown,
   ChevronUp,
-  Heart,
-  ShieldCheck,
-  Building2,
-  FileText,
-  Phone,
-  Mail,
 } from 'lucide-react';
 
 interface Message {
@@ -21,46 +16,6 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
 }
-
-const FAQ_RESPONSES: Record<string, string> = {
-  // General System Questions
-  'what is this system': 'The Adama Support Portal is an official municipal charity management system for Adama City Administration. It digitizes compassion and ensures transparent support distribution through a 3-tier government verification system (Kebele → Woreda → Direct Delivery).',
-  
-  'how does it work': 'The system works through a transparent 3-tier verification process:\n\n1. **Kebele Verification**: Citizens submit requests with National/Kebele IDs. Local administrators verify household income.\n2. **Woreda Endorsement**: Sub-city supervisors conduct second-tier audit checks and approve campaigns.\n3. **Direct Delivery**: Donations are assigned directly to approved requests with digital receipt confirmation.',
-  
-  'who can use': 'The system is designed for:\n- **Donors**: Individuals, NGOs, Companies, and Diaspora who want to contribute\n- **Beneficiaries**: Citizens in need of support who can apply with proper documentation\n- **Administrators**: Kebele, Woreda, and City officials who verify and approve requests',
-  
-  // Donation Questions
-  'how to donate': 'You can donate in two ways:\n\n1. **As a Guest**: Click the "Donate Now" button on the landing page - no registration required!\n2. **As a Registered Donor**: Log in to your donor portal for tracking and receipt management\n\nPayment methods include Telebirr and CBE Bank transfer.',
-  
-  'what can i donate': 'You can donate:\n- **Money**: Financial contributions via Telebirr or CBE Bank\n- **Items**: Physical goods like food supplies, clothing, medical supplies, school kits, etc.',
-  
-  'minimum donation': 'The minimum monetary donation is 100 ETB. For items, there is no minimum - any contribution helps!',
-  
-  'is it safe': 'Yes! The system is 100% verified through:\n- Government ID poverty audit\n- Kebele resident verification\n- Woreda supervisor approval\n- Digital receipt tracking\n- Transparent distribution logging',
-  
-  // Beneficiary Questions
-  'how to apply': 'To apply for support:\n\n1. Click "Apply for Support" on the landing page\n2. Register as a beneficiary with your Kebele ID\n3. Submit your support request with required documents\n4. Wait for Kebele verification (typically 1-3 days)\n5. Track your request status in your dashboard',
-  
-  'what documents needed': 'Required documents include:\n- National ID or Kebele Resident ID\n- Proof of income or financial hardship\n- Support request details\n- Any relevant medical or emergency documentation',
-  
-  'how long approval': 'Approval timeline:\n- Kebele verification: 1-3 days\n- Woreda review: 2-5 days\n- Total: Typically 3-8 days for full approval and publishing',
-  
-  // Transparency Questions
-  'how is it transparent': 'Transparency features include:\n- Real-time donation tracking\n- Public transparency portal\n- Digital receipt verification codes\n- Distribution photo documentation\n- Beneficiary signature confirmation\n- Audit trail for all transactions',
-  
-  'can i track my donation': 'Yes! As a registered donor, you can:\n- Track all your donations in real-time\n- View distribution status\n- Download digital receipts\n- See beneficiary impact stories',
-  
-  // Contact Questions
-  'contact support': 'For support:\n\n📞 Phone: +251 22 111 0000 / +251 22 112 0011\n📧 Email: support@adama.gov.et\n📍 Address: Adama Mayor Cabinet Office, Bole Road',
-  
-  'office hours': 'Office hours:\n- Monday to Friday: 8:00 AM - 5:00 PM\n- Saturday: 9:00 AM - 1:00 PM\n- Sunday: Closed',
-  
-  // Technical Questions
-  'technical support': 'For technical issues:\n- Email: tech@adama.gov.et\n- Phone: +251 22 111 0000 (ext. 5)\n- Response time: Within 24 hours',
-  
-  'default': 'I can help you with information about the Adama Support Portal. Try asking about:\n\n- How the system works\n- How to donate or apply for support\n- Verification process\n- Transparency features\n- Contact information\n\nOr type "help" for more options.',
-};
 
 export const ChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -85,49 +40,6 @@ export const ChatBot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const findBestResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase().trim();
-    
-    // Direct keyword matching
-    for (const [key, response] of Object.entries(FAQ_RESPONSES)) {
-      if (key === 'default') continue;
-      
-      const keywords = key.split(' ');
-      const matchCount = keywords.filter(keyword => 
-        lowerQuery.includes(keyword) || lowerQuery.includes(keyword.replace(' ', ''))
-      ).length;
-      
-      if (matchCount >= keywords.length * 0.5) {
-        return response;
-      }
-    }
-    
-    // Fallback responses for common intents
-    if (lowerQuery.includes('donate') || lowerQuery.includes('give') || lowerQuery.includes('contribute')) {
-      return FAQ_RESPONSES['how to donate'];
-    }
-    if (lowerQuery.includes('apply') || lowerQuery.includes('request') || lowerQuery.includes('beneficiary')) {
-      return FAQ_RESPONSES['how to apply'];
-    }
-    if (lowerQuery.includes('safe') || lowerQuery.includes('secure') || lowerQuery.includes('trust')) {
-      return FAQ_RESPONSES['is it safe'];
-    }
-    if (lowerQuery.includes('contact') || lowerQuery.includes('phone') || lowerQuery.includes('email') || lowerQuery.includes('address')) {
-      return FAQ_RESPONSES['contact support'];
-    }
-    if (lowerQuery.includes('transparent') || lowerQuery.includes('track') || lowerQuery.includes('receipt')) {
-      return FAQ_RESPONSES['how is it transparent'];
-    }
-    if (lowerQuery.includes('work') || lowerQuery.includes('process') || lowerQuery.includes('system')) {
-      return FAQ_RESPONSES['how does it work'];
-    }
-    if (lowerQuery.includes('who') || lowerQuery.includes('use') || lowerQuery.includes('access')) {
-      return FAQ_RESPONSES['who can use'];
-    }
-    
-    return FAQ_RESPONSES['default'];
-  };
-
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
@@ -142,9 +54,10 @@ export const ChatBot: React.FC = () => {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate bot thinking time
-    setTimeout(() => {
-      const botResponse = findBestResponse(inputText);
+    try {
+      const response = await chatbotApi.askQuestion(inputText);
+      const botResponse = response.data.answer;
+      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: botResponse,
@@ -153,8 +66,18 @@ export const ChatBot: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Failed to get chatbot response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Sorry, I encountered an error. Please try again or contact support@adama.gov.et',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 800);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
