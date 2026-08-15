@@ -114,9 +114,11 @@ export class ChatBotService {
     return bestMatch ? bestMatch.faq.answer : null;
   }
 
-  static async askWithAI(query: string): Promise<string> {
+  static async askWithAI(query: string, sessionId?: string, userId?: string): Promise<string> {
     // First try to find a match in FAQs
     const faqMatch = await this.findBestMatch(query);
+    let response: string;
+    let responseSource: string = 'FAQ';
     
     // If Gemini API is available, use it for more sophisticated responses
     if (genAI) {
@@ -142,26 +144,75 @@ Provide a clear, helpful response. If the question is about the system, prioriti
         });
         
         if (result && result.text) {
-          return result.text;
+          response = result.text;
+          responseSource = 'AI';
+        } else {
+          response = "I apologize, but I couldn't generate a response. Please try again.";
+          responseSource = 'FALLBACK';
         }
-        
-        return "I apologize, but I couldn't generate a response. Please try again.";
       } catch (error) {
         console.error('Gemini API error:', error);
         // Fall back to FAQ match if AI fails
         if (faqMatch) {
-          return faqMatch;
+          response = faqMatch;
+          responseSource = 'FAQ';
+        } else {
+          response = "I apologize, but I'm having trouble connecting to my AI service. Please try again or contact support@adama.gov.et for assistance.";
+          responseSource = 'FALLBACK';
         }
-        return "I apologize, but I'm having trouble connecting to my AI service. Please try again or contact support@adama.gov.et for assistance.";
+      }
+    } else {
+      // If no Gemini API, return FAQ match or fallback message
+      if (faqMatch) {
+        response = faqMatch;
+        responseSource = 'FAQ';
+      } else {
+        response = "I don't have a specific answer for that question. For more information, please contact our support team at support@adama.gov.et or call +251 22 111 0000.";
+        responseSource = 'FALLBACK';
       }
     }
     
-    // If no Gemini API, return FAQ match or fallback message
-    if (faqMatch) {
-      return faqMatch;
+    // Record conversation in database
+    if (sessionId) {
+      try {
+        await prisma.chatConversation.create({
+          data: {
+            sessionId,
+            userId,
+            question: query,
+            answer: response,
+            responseSource,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to record conversation:', error);
+        // Don't fail the response if recording fails
+      }
     }
     
-    return "I don't have a specific answer for that question. For more information, please contact our support team at support@adama.gov.et or call +251 22 111 0000.";
+    return response;
+  }
+
+  static async getConversationHistory(sessionId: string) {
+    return await prisma.chatConversation.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  static async getUserConversations(userId: string) {
+    return await prisma.chatConversation.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50, // Limit to last 50 conversations
+    });
+  }
+
+  static async getAllConversations() {
+    return await prisma.chatConversation.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100, // Limit to last 100 conversations for admin view
+    });
   }
 
   static async seedInitialFAQs() {

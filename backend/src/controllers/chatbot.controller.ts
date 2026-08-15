@@ -70,14 +70,19 @@ export class ChatBotController {
 
   static async askQuestion(req: Request, res: Response, next: NextFunction) {
     try {
-      const { query } = req.body;
+      const { query, sessionId } = req.body;
+      const userId = (req as any).user?.id; // Get user ID if authenticated
+      
       if (!query) {
         return res.status(400).json({ success: false, message: 'Query is required' });
       }
 
-      const answer = await ChatBotService.askWithAI(query);
+      // Generate session ID if not provided
+      const session = sessionId || require('crypto').randomUUID();
+
+      const answer = await ChatBotService.askWithAI(query, session, userId);
       
-      return sendSuccess(res, { answer, found: true }, 'Answer generated');
+      return sendSuccess(res, { answer, sessionId: session, found: true }, 'Answer generated');
     } catch (error) {
       next(error);
     }
@@ -87,6 +92,39 @@ export class ChatBotController {
     try {
       const count = await ChatBotService.seedInitialFAQs();
       return sendSuccess(res, { count }, `Seeded ${count} initial FAQs`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getConversationHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { sessionId } = req.params;
+      const sessionStr = Array.isArray(sessionId) ? sessionId[0] : sessionId;
+      const conversations = await ChatBotService.getConversationHistory(sessionStr);
+      return sendSuccess(res, conversations, 'Fetched conversation history');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getUserConversations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
+      const conversations = await ChatBotService.getUserConversations(userId);
+      return sendSuccess(res, conversations, 'Fetched user conversations');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAllConversations(req: Request, res: Response, next: NextFunction) {
+    try {
+      const conversations = await ChatBotService.getAllConversations();
+      return sendSuccess(res, conversations, 'Fetched all conversations');
     } catch (error) {
       next(error);
     }

@@ -182,6 +182,18 @@ model ChatBotFAQ {
   @@map("chatbot_faqs")
 }
 
+model ChatConversation {
+  id          String   @id @default(uuid())
+  sessionId   String
+  userId      String?
+  question    String
+  answer      String
+  responseSource String @default("FAQ") // FAQ, AI, FALLBACK
+  createdAt   DateTime @default(now())
+
+  @@map("chat_conversations")
+}
+
 model AuditLog {
   id        String    @id @default(uuid())
   userId    String
