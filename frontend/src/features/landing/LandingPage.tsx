@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { AdamaLogo } from '../../components/common/AdamaLogo';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { ChatBot } from '../../components/common/ChatBot';
 import { TransparencyPortal } from '../transparency/TransparencyPortal';
 import { BeneficiaryRequest } from '../../types';
 import {
@@ -610,6 +611,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* ChatBot Widget */}
+      <ChatBot />
     </div>
   );
 };
