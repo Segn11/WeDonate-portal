@@ -4,8 +4,8 @@ import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// All authenticated users can view donations
-router.get('/', authenticate, DonationController.getAll);
+// Public route - anyone can view donations for transparency
+router.get('/', DonationController.getAll);
 
 // Authenticated DONORs can create donations
 router.post('/', authenticate, authorize(['DONOR']), DonationController.create);

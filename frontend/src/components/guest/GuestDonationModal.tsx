@@ -74,10 +74,13 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create donation');
+        const errorData = await response.json();
+        console.error('Guest donation error:', errorData);
+        throw new Error(errorData.message || 'Failed to create donation');
       }
 
-      await response.json();
+      const result = await response.json();
+      console.log('Guest donation success:', result);
       setIsSubmitting(false);
       setStep(3); // Success step
     } catch (error) {

@@ -60,22 +60,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       (selectedCategoryFilter === 'ALL' || r.category === selectedCategoryFilter)
   );
 
-  // Filter critical urgency requests for emergency section with fallback
-  let criticalRequests = requests.filter(
-    (r) =>
-      r.urgency === 'CRITICAL' &&
-      ['APPROVED_PUBLISHED', 'PARTIALLY_FUNDED'].includes(r.status)
-  );
-
-  // Fallback: If fewer than 3 explicit CRITICAL requests, include HIGH urgency or top active requests
-  if (criticalRequests.length < 3) {
-    const secondary = requests.filter(
-      (r) =>
-        ['APPROVED_PUBLISHED', 'PARTIALLY_FUNDED'].includes(r.status) &&
-        !criticalRequests.some((c) => c.id === r.id)
-    );
-    criticalRequests = [...criticalRequests, ...secondary].slice(0, 3);
-  }
 
   // Real stats calculation from actual data
   const totalRaisedEtb = donations.reduce((acc, d) => acc + (d.amountEtb || 0), 0);
@@ -234,92 +218,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* 3. Critical Support Needs Section */}
-      {criticalRequests.length > 0 && (
-        <section className="bg-rose-50 border-y border-rose-200 py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-rose-900 tracking-tight">
-                    Critical Support Needs
-                  </h2>
-                  <p className="text-xs text-rose-700 font-medium">
-                    Urgent cases requiring immediate assistance
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs bg-rose-100 text-rose-800 font-bold px-3 py-1 rounded-full border border-rose-300">
-                {criticalRequests.length} Emergency Cases
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {criticalRequests.map((req) => {
-                const pct = Math.min(
-                  100,
-                  Math.round(((req.amountRaisedEtb || 0) / (req.estimatedAmountNeededEtb || 1)) * 100)
-                );
-
-                return (
-                  <div
-                    key={req.id}
-                    className="bg-white rounded-2xl border-2 border-rose-300 shadow-md p-5 space-y-4 relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl">
-                      URGENT
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-extrabold text-sm text-slate-900 line-clamp-1">{req.title}</h3>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {req.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                        <MapPin className="w-3.5 h-3.5 text-rose-600" />
-                        <span className="font-medium">{req.kebele}, {req.woreda}</span>
-                      </div>
-
-                      <div className="space-y-1.5 pt-1">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="text-rose-700">
-                            ETB {(req.amountRaisedEtb || 0).toLocaleString()} raised
-                          </span>
-                          <span className="text-slate-500">
-                            Goal: ETB {req.estimatedAmountNeededEtb.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-rose-600 rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => onSelectRequestForDonation(req)}
-                      className="w-full px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm shadow-rose-200 flex items-center justify-center gap-2"
-                    >
-                      <HeartHandshake className="w-4 h-4" />
-                      <span>Donate Now</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 4. Impact Metric Counter Bar */}
+      {/* 3. Impact Metric Counter Bar */}
       <section className="bg-white border-y border-slate-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">

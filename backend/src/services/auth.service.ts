@@ -47,6 +47,22 @@ export class AuthService {
       throw { statusCode: 400, message: 'Email and fullName are required' };
     }
 
+    // Role validation: prevent role confusion
+    const adminRoles = ['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'];
+    if (adminRoles.includes(data.role)) {
+      throw { statusCode: 403, message: 'Admin roles cannot be self-registered. Contact system administrator.' };
+    }
+
+    // Beneficiary-specific validation
+    if (data.role === 'BENEFICIARY') {
+      if (!data.nationalIdNumber) {
+        throw { statusCode: 400, message: 'National ID number is required for beneficiary registration' };
+      }
+      if (!data.kebele) {
+        throw { statusCode: 400, message: 'Kebele is required for beneficiary registration' };
+      }
+    }
+
     const existing = await prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
     });
@@ -121,6 +137,12 @@ export class AuthService {
       const fullName = payload.name || 'Google User';
       const avatarUrl = payload.picture;
 
+      // Role validation: prevent admin role assignment via Google Auth
+      const adminRoles = ['KEBELE_ADMIN', 'WOREDA_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN'];
+      if (data.role && adminRoles.includes(data.role)) {
+        throw { statusCode: 403, message: 'Admin roles cannot be assigned via Google authentication. Contact system administrator.' };
+      }
+
       let user = await prisma.user.findUnique({
         where: { email },
       });
@@ -134,6 +156,10 @@ export class AuthService {
         };
 
         if (data.role && user.role !== data.role) {
+          // Prevent changing to admin role
+          if (adminRoles.includes(data.role)) {
+            throw { statusCode: 403, message: 'Cannot change to admin role via Google authentication.' };
+          }
           updateData.role = data.role;
           // Update verification status based on new role
           const isVerified = data.role === 'DONOR';

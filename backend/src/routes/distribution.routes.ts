@@ -4,19 +4,14 @@ import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// All authenticated users can view distributions
-router.get('/', authenticate, DistributionController.getAll);
+// Public route - anyone can view distributions for transparency
+router.get('/', DistributionController.getAll);
 
 // Public verification endpoint (no auth required)
 router.get('/verify/:code', DistributionController.verifyCode);
 
-// Only KEBELE_ADMIN, CITY_ADMIN, and SYSTEM_ADMIN can create distributions
-router.post(
-  '/',
-  authenticate,
-  authorize(['KEBELE_ADMIN', 'CITY_ADMIN', 'SYSTEM_ADMIN']),
-  DistributionController.create
-);
+// KEBELE_ADMIN can create distributions
+router.post('/', authenticate, authorize(['KEBELE_ADMIN']), DistributionController.create);
 
 // Initiate distribution (mark request as IN_DISTRIBUTION)
 router.post(

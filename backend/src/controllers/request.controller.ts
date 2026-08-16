@@ -6,12 +6,16 @@ export class RequestController {
   static async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { status, kebele, woreda, category, search } = req.query;
+      const user = (req as any).user;
+      
       const requests = await RequestService.getAllRequests({
         status: status as any,
         kebele: kebele as string,
         woreda: woreda as string,
         category: category as any,
         search: search as string,
+        userRole: user?.role,
+        userKebele: user?.kebele,
       });
       return sendSuccess(res, requests, 'Fetched support requests');
     } catch (error) {
@@ -23,7 +27,13 @@ export class RequestController {
     try {
       const { id } = req.params;
       const idStr = Array.isArray(id) ? id[0] : id;
-      const request = await RequestService.getById(idStr);
+      const user = (req as any).user;
+      
+      const request = await RequestService.getById(idStr, {
+        userRole: user?.role,
+        userKebele: user?.kebele,
+        userWoreda: user?.woreda,
+      });
       return sendSuccess(res, request, 'Fetched request details');
     } catch (error: any) {
       if (error.statusCode) {
@@ -47,14 +57,20 @@ export class RequestController {
       const { id } = req.params;
       const idStr = Array.isArray(id) ? id[0] : id;
       const { status, comment, rejectionReason } = req.body;
-      const updatedBy = req.user?.fullName || 'Official Admin';
+      const user = (req as any).user;
+      const updatedBy = user?.fullName || 'Official Admin';
 
       const updated = await RequestService.updateStatus(
         idStr,
         status,
         updatedBy,
         comment,
-        rejectionReason
+        rejectionReason,
+        {
+          userRole: user?.role,
+          userKebele: user?.kebele,
+          userWoreda: user?.woreda,
+        }
       );
 
       return sendSuccess(res, updated, `Request status updated to ${status}`);
