@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
+import { statisticsApi } from '../../services/statisticsApi';
 import { AdamaLogo } from '../../components/common/AdamaLogo';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { ExportModal } from '../../components/common/ExportModal';
@@ -42,6 +43,32 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
   onOpenDonate,
 }) => {
   const { requests, requestsLoading, requestsError, donations, distributions, auditLogs } = useData();
+
+  // Statistics state
+  const [stats, setStats] = useState({
+    totalRaisedEtb: 0,
+    totalBeneficiaries: 0,
+    activeKebeles: 0,
+    totalDistributions: 0,
+    totalRequests: 0,
+  });
+
+  // Fetch statistics from backend
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await statisticsApi.getPublicStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch statistics:', error);
+      }
+    };
+    fetchStats();
+
+    // Refetch stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,10 +133,17 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
     };
   }, [searchQuery, donations, distributions, requests]);
 
-  // Overall financial metrics - calculated from real data
-  const totalFinancialAidEtb = donations.reduce((sum, d) => sum + (d.amountEtb || 0), 0);
-  const totalVerifiedBeneficiaries = requests.length;
-  const totalDistributionsCount = distributions.length;
+  // Format large numbers for display with compact format and + suffix
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000000) {
+      return `${(num / 1000000000).toFixed(1)}B+`;
+    } else if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M+`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K+`;
+    }
+    return `${num.toLocaleString()}+`;
+  };
 
   // Kebele-by-Kebele Aggregated Matrix Data
   const kebeleMatrix = React.useMemo(() => {
@@ -221,7 +255,7 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
 
             <div>
               <p className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
-                ETB {totalFinancialAidEtb.toLocaleString()}
+                ETB {formatNumber(stats.totalRaisedEtb)}
               </p>
               <p className="text-[11px] text-slate-300 font-medium">Total Aid Mobilized & Accounted</p>
             </div>
@@ -230,12 +264,12 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
               <div>
                 <p className="text-slate-400">Verified Citizens</p>
                 <p className="font-extrabold text-white text-sm">
-                  {totalVerifiedBeneficiaries.toLocaleString()}
+                  {formatNumber(stats.totalBeneficiaries)}
                 </p>
               </div>
               <div>
                 <p className="text-slate-400">Active Kebeles</p>
-                <p className="font-extrabold text-white text-sm">15 Kebeles</p>
+                <p className="font-extrabold text-white text-sm">{stats.activeKebeles} Kebeles</p>
               </div>
             </div>
           </div>

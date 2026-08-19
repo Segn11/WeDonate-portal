@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { statisticsApi } from '../../services/statisticsApi';
 import { AdamaLogo } from '../../components/common/AdamaLogo';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { ChatBot } from '../../components/common/ChatBot';
@@ -49,9 +50,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   hideHeader = false,
 }) => {
   const { currentUser } = useAuth();
-  const { requests, donations, distributions } = useData();
+  const { requests, distributions, refetchRequests } = useData();
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
+  const [stats, setStats] = useState({
+    totalRaisedEtb: 0,
+    totalBeneficiaries: 0,
+    activeKebeles: 0,
+    totalDistributions: 0,
+    totalRequests: 0,
+  });
+
+  // Fetch statistics from backend
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await statisticsApi.getPublicStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch statistics:', error);
+      }
+    };
+    fetchStats();
+
+    // Refetch stats every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refetch requests periodically to ensure synchronization
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchRequests();
+    }, 30000); // Refetch every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [refetchRequests]);
 
   // Filter approved and published requests for the public showcase
   const activePublishedRequests = requests.filter(
@@ -61,16 +95,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   );
 
 
-  // Real stats calculation from actual data
-  const totalRaisedEtb = donations.reduce((acc, d) => acc + (d.amountEtb || 0), 0);
-  
-  // Count unique citizens assisted based on completed distributions
-  const uniqueBeneficiaries = new Set(distributions.map(d => d.beneficiaryName)).size;
-  const totalBeneficiaries = uniqueBeneficiaries > 0 ? uniqueBeneficiaries : 0;
-  
-  // Count unique active kebeles from requests
-  const uniqueKebeles = new Set(requests.map(r => r.kebele)).size;
-  const activeKebeles = uniqueKebeles > 0 ? uniqueKebeles : 0;
+  // Format large numbers for display with compact format and + suffix
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000000) {
+      return `${(num / 1000000000).toFixed(1)}B+`;
+    } else if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M+`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K+`;
+    }
+    return `${num.toLocaleString()}+`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
@@ -182,34 +217,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 <div className="space-y-4">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                         Total Funds Mobilized
                       </p>
-                      <p className="text-2xl font-black text-emerald-700 mt-0.5">
-                        ETB {totalRaisedEtb.toLocaleString()}
+                      <p className="text-2xl font-black text-emerald-700 mt-0.5 truncate">
+                        ETB {formatNumber(stats.totalRaisedEtb)}
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0 ml-3">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">Citizens Assisted</p>
-                      <p className="text-lg font-extrabold text-slate-900">{totalBeneficiaries.toLocaleString()}+</p>
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-0">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase truncate">Citizens Assisted</p>
+                      <p className="text-lg font-extrabold text-slate-900 truncate">{formatNumber(stats.totalBeneficiaries)}</p>
                     </div>
 
-                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">Active Kebeles</p>
-                      <p className="text-lg font-extrabold text-slate-900">{activeKebeles} Kebeles</p>
+                    <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-0">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase truncate">Active Kebeles</p>
+                      <p className="text-lg font-extrabold text-slate-900 truncate">{stats.activeKebeles} Kebeles</p>
                     </div>
                   </div>
 
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 font-medium flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>100% verified through Kebele resident IDs & Woreda supervisors.</span>
+                    <span className="truncate">100% verified through Kebele resident IDs & Woreda supervisors.</span>
                   </div>
                 </div>
               </div>
@@ -222,23 +257,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="bg-white border-y border-slate-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-slate-900">
-                {totalRaisedEtb > 0 ? `${(totalRaisedEtb / 1000000).toFixed(2)}M+ ETB` : '0 ETB'}
+            <div className="space-y-1 min-h-0">
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 truncate">
+                {stats.totalRaisedEtb > 0 ? `ETB ${formatNumber(stats.totalRaisedEtb)}` : '0 ETB'}
               </p>
-              <p className="text-xs text-slate-500 font-medium">Direct Financial & Item Aid</p>
+              <p className="text-xs text-slate-500 font-medium truncate">Direct Financial & Item Aid</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-emerald-700">100% Verified</p>
-              <p className="text-xs text-slate-500 font-medium">Government ID Poverty Audit</p>
+            <div className="space-y-1 min-h-0">
+              <p className="text-2xl sm:text-3xl font-black text-emerald-700 truncate">100% Verified</p>
+              <p className="text-xs text-slate-500 font-medium truncate">Government ID Poverty Audit</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-slate-900">{activeKebeles} Kebeles</p>
-              <p className="text-xs text-slate-500 font-medium">Adama Municipal Coverage</p>
+            <div className="space-y-1 min-h-0">
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 truncate">{stats.activeKebeles} Kebeles</p>
+              <p className="text-xs text-slate-500 font-medium truncate">Adama Municipal Coverage</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl sm:text-3xl font-black text-amber-600">{distributions.length}+</p>
-              <p className="text-xs text-slate-500 font-medium">Digital Receipts Issued</p>
+            <div className="space-y-1 min-h-0">
+              <p className="text-2xl sm:text-3xl font-black text-amber-600 truncate">{stats.totalDistributions}+</p>
+              <p className="text-xs text-slate-500 font-medium truncate">Digital Receipts Issued</p>
             </div>
           </div>
         </div>

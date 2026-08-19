@@ -303,9 +303,9 @@ export const GuestDonationModal: React.FC<GuestDonationModalProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('CBE_BANK')}
+                      onClick={() => setPaymentMethod('CBE_BIRR')}
                       className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                        paymentMethod === 'CBE_BANK'
+                        paymentMethod === 'CBE_BIRR'
                           ? 'border-emerald-500 bg-emerald-50'
                           : 'border-slate-200 hover:border-slate-300'
                       }`}

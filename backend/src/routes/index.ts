@@ -9,6 +9,7 @@ import notificationRoutes from './notification.routes';
 import analyticsRoutes from './analytics.routes';
 import chatbotRoutes from './chatbot.routes';
 import auditRoutes from './audit.routes';
+import statisticsRoutes from './statistics.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/chatbot', chatbotRoutes);
 router.use('/audit', auditRoutes);
+router.use('/statistics', statisticsRoutes);
 
 export default router;

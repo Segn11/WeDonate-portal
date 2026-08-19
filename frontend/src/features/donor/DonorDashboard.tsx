@@ -43,7 +43,7 @@ export const DonorDashboard: React.FC<DonorDashboardProps> = ({
 
   // Donor's own donations
   const myDonations = donations.filter(
-    (d) => d.donorId === currentUser?.id || currentUser?.role === 'CITY_ADMIN'
+    (d) => d.donorId === currentUser?.id || currentUser?.role === 'DONAR'
   );
 
   const totalDonatedEtb = myDonations.reduce((sum, d) => sum + (d.amountEtb || 0), 0);
