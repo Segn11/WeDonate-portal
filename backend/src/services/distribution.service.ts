@@ -51,6 +51,22 @@ export class DistributionService {
       where: { id: data.requestId },
     });
 
+    if (!request) {
+      throw { statusCode: 404, message: 'Beneficiary request not found' };
+    }
+
+    if (!data.donationId) {
+      throw { statusCode: 400, message: 'A valid donation ID is required to record a distribution.' };
+    }
+
+    const donationExists = await prisma.donation.findUnique({
+      where: { id: data.donationId },
+    });
+
+    if (!donationExists) {
+      throw { statusCode: 400, message: `Failed to record distribution. Donation with ID ${data.donationId} does not exist.` };
+    }
+
     // First, mark request as IN_DISTRIBUTION
     await prisma.beneficiaryRequest.update({
       where: { id: data.requestId },

@@ -49,6 +49,7 @@ export class RequestService {
       include: {
         documents: true,
         statusHistory: { orderBy: { updatedAt: 'desc' } },
+        donations: true,
       },
       orderBy: { createdAt: 'desc' },
     });

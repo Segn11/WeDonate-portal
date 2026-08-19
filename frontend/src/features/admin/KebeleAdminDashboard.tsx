@@ -90,19 +90,28 @@ export const KebeleAdminDashboard: React.FC = () => {
     }
   };
 
-  const handleConfirmLocalDelivery = (req: BeneficiaryRequest) => {
-    recordDistribution({
-      requestId: req.id,
-      beneficiaryName: req.beneficiaryName,
-      beneficiaryPhone: req.beneficiaryPhone,
-      kebele: req.kebele,
-      woreda: req.woreda,
-      donationId: 'don-501',
-      itemsOrAmountDistributed: `${req.estimatedAmountNeededEtb.toLocaleString()} ETB or Equivalent Rations`,
-      distributedByKebeleAdmin: currentUser?.fullName || 'Kebele Admin',
-      confirmedByBeneficiary: true,
-      signatureMock: `${req.beneficiaryName} (Fingerprint / Digital Sign Verified)`,
-    });
+  const handleConfirmLocalDelivery = async (req: BeneficiaryRequest) => {
+    const validDonationId = req.donations && req.donations.length > 0 
+      ? req.donations[0].id 
+      : ''; // Fallback, but backend should catch this if it's required and empty
+
+    try {
+      await recordDistribution({
+        requestId: req.id,
+        beneficiaryName: req.beneficiaryName,
+        beneficiaryPhone: req.beneficiaryPhone,
+        kebele: req.kebele,
+        woreda: req.woreda,
+        donationId: validDonationId,
+        itemsOrAmountDistributed: `${req.estimatedAmountNeededEtb.toLocaleString()} ETB or Equivalent Rations`,
+        distributedByKebeleAdmin: currentUser?.fullName || 'Kebele Admin',
+        confirmedByBeneficiary: true,
+        signatureMock: `${req.beneficiaryName} (Fingerprint / Digital Sign Verified)`,
+      });
+      alert('Distribution successfully recorded!');
+    } catch (error: any) {
+      alert(error.message || 'Failed to record distribution. Please check if a valid donation exists for this request.');
+    }
   };
 
   return (

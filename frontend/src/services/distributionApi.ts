@@ -62,7 +62,14 @@ export const distributionApi = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create distribution');
+      let errorMsg = 'Failed to create distribution';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.message) errorMsg = errorData.message;
+      } catch (e) {
+        // ignore JSON parse error
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
