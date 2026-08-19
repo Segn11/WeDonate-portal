@@ -17,19 +17,10 @@ export class RequestService {
     const where: any = {};
 
     // Apply role-based access control
-    if (filters.userRole === 'KEBELE_ADMIN' && filters.userKebele) {
-      // Extract kebele number for more robust matching
-      const kebeleNumber = filters.userKebele.match(/\d+/)?.[0];
-      if (kebeleNumber) {
-        // Match requests that contain the kebele number (e.g., "10" matches "Kebele 10", "Kebele 10 (Name)")
-        where.kebele = { contains: kebeleNumber, mode: 'insensitive' };
-      } else {
-        // Fallback to exact match if no number found
-        where.kebele = { contains: filters.userKebele, mode: 'insensitive' };
-      }
-    } else if (filters.userRole === 'WOREDA_ADMIN' && filters.userWoreda) {
-      // Woreda admins can only see requests from their woreda
-      where.woreda = { contains: filters.userWoreda, mode: 'insensitive' };
+    if (filters.userRole === 'KEBELE_ADMIN') {
+      // Single Kebele Admin manages all kebeles
+    } else if (filters.userRole === 'WOREDA_ADMIN') {
+      // Single Woreda Admin manages all woredas
     } else if (filters.userRole === 'BENEFICIARY') {
       // Beneficiaries can only see their own requests (handled by beneficiaryId filter)
       // This would need to be passed separately
@@ -82,25 +73,10 @@ export class RequestService {
     }
 
     // Apply role-based access control
-    if (userContext?.userRole === 'KEBELE_ADMIN' && userContext.userKebele) {
-      // Extract kebele number for more robust matching
-      const kebeleNumber = userContext.userKebele.match(/\d+/)?.[0];
-      if (kebeleNumber) {
-        // Check if request kebele contains the kebele number
-        if (!request.kebele?.toLowerCase().includes(kebeleNumber.toLowerCase())) {
-          throw { statusCode: 403, message: 'You do not have permission to access this request' };
-        }
-      } else {
-        // Fallback to exact match if no number found
-        if (!request.kebele?.toLowerCase().includes(userContext.userKebele.toLowerCase())) {
-          throw { statusCode: 403, message: 'You do not have permission to access this request' };
-        }
-      }
-    } else if (userContext?.userRole === 'WOREDA_ADMIN' && userContext.userWoreda) {
-      // Woreda admin can only access requests from their woreda
-      if (!request.woreda?.toLowerCase().includes(userContext.userWoreda.toLowerCase())) {
-        throw { statusCode: 403, message: 'You do not have permission to access this request' };
-      }
+    if (userContext?.userRole === 'KEBELE_ADMIN') {
+      // Single Kebele Admin manages all kebeles
+    } else if (userContext?.userRole === 'WOREDA_ADMIN') {
+      // Single Woreda Admin manages all woredas
     } else if (userContext?.userRole === 'DONOR') {
       // Donors can only access published requests
       if (request.status !== 'APPROVED_PUBLISHED') {
@@ -191,40 +167,7 @@ export class RequestService {
       throw { statusCode: 404, message: 'Support request not found' };
     }
 
-    // Apply kebele matching for kebele admin approvals
-    if (userContext?.userRole === 'KEBELE_ADMIN' && userContext.userKebele) {
-      // Extract kebele number for matching
-      const adminKebeleNumber = userContext.userKebele.match(/\d+/)?.[0];
-      const requestKebeleNumber = existing.kebele.match(/\d+/)?.[0];
-      
-      if (adminKebeleNumber && requestKebeleNumber) {
-        // Check if kebele numbers match
-        if (adminKebeleNumber !== requestKebeleNumber) {
-          throw { 
-            statusCode: 403, 
-            message: `You can only approve requests from your kebele. Request is from Kebele ${requestKebeleNumber}, you are admin for Kebele ${adminKebeleNumber}.` 
-          };
-        }
-      } else {
-        // Fallback to string matching if numbers can't be extracted
-        if (!existing.kebele?.toLowerCase().includes(userContext.userKebele.toLowerCase())) {
-          throw { 
-            statusCode: 403, 
-            message: `You can only approve requests from your kebele. Request kebele: ${existing.kebele}, your kebele: ${userContext.userKebele}` 
-          };
-        }
-      }
-    }
-
-    // Apply woreda matching for woreda admin approvals
-    if (userContext?.userRole === 'WOREDA_ADMIN' && userContext.userWoreda) {
-      if (!existing.woreda?.toLowerCase().includes(userContext.userWoreda.toLowerCase())) {
-        throw { 
-          statusCode: 403, 
-          message: `You can only approve requests from your woreda. Request woreda: ${existing.woreda}, your woreda: ${userContext.userWoreda}` 
-        };
-      }
-    }
+    // Single Kebele/Woreda admins can approve for any area
 
     const updateData: any = {
       status: newStatus,

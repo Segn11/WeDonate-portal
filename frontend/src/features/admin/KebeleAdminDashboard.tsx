@@ -29,7 +29,7 @@ export const KebeleAdminDashboard: React.FC = () => {
 
   // Filter requests for this Kebele
   const myKebeleName = currentUser?.kebele;
-  const kebeleRequests = (requests || []).filter((r) => myKebeleName && r.kebele === myKebeleName);
+  const kebeleRequests = (requests || []);
 
   const pendingVerification = kebeleRequests.filter((r) => r.status === 'SUBMITTED' || r.status === 'UNDER_KEBELE_REVIEW');
   const readyForDelivery = kebeleRequests.filter((r) => r.status === 'FULLY_FUNDED' || r.status === 'IN_DISTRIBUTION');

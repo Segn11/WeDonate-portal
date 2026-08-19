@@ -44,10 +44,18 @@ export const donationApi = {
     if (donorId) params.append('donorId', donorId);
     if (requestId) params.append('requestId', requestId);
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Only add auth header if token exists (for authenticated requests)
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/donations?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-      },
+      headers,
     });
 
     if (!response.ok) {

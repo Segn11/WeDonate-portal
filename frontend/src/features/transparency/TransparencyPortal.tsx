@@ -52,15 +52,20 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
     totalDistributions: 0,
     totalRequests: 0,
   });
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Fetch statistics from backend
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setStatsLoading(true);
         const data = await statisticsApi.getPublicStats();
         setStats(data);
       } catch (error) {
         console.error('Failed to fetch statistics:', error);
+        // Keep default values on error
+      } finally {
+        setStatsLoading(false);
       }
     };
     fetchStats();
@@ -134,7 +139,10 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
   }, [searchQuery, donations, distributions, requests]);
 
   // Format large numbers for display with compact format and + suffix
-  const formatNumber = (num: number): string => {
+  const formatNumber = (num: number | undefined | null): string => {
+    if (num === undefined || num === null || isNaN(num)) {
+      return '0+';
+    }
     if (num >= 1000000000) {
       return `${(num / 1000000000).toFixed(1)}B+`;
     } else if (num >= 1000000) {
@@ -167,15 +175,24 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
 
   // Filtered public ledger items
   const filteredDonations = donations.filter((d) => {
-    const matchesKebele =
-      selectedKebeleFilter === 'ALL' ||
-      requests.some(
+    // Kebele filter - only filter if donation has an assigned request
+    let matchesKebele = selectedKebeleFilter === 'ALL';
+    if (!matchesKebele && d.assignedToRequestId) {
+      matchesKebele = requests.some(
         (r) =>
           r.id === d.assignedToRequestId &&
           r.kebele.toLowerCase().includes(selectedKebeleFilter.toLowerCase())
       );
+    } else if (!matchesKebele && !d.assignedToRequestId) {
+      // If filtering by kebele but donation has no assigned request, exclude it
+      return false;
+    }
+
+    // Category filter - handle null/undefined targetCategory
     const matchesCategory =
-      selectedCategoryFilter === 'ALL' || d.targetCategory === selectedCategoryFilter;
+      selectedCategoryFilter === 'ALL' ||
+      (d.targetCategory && d.targetCategory === selectedCategoryFilter);
+
     const matchesQuery =
       !searchQuery ||
       d.donationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -673,67 +690,73 @@ export const TransparencyPortal: React.FC<TransparencyPortalProps> = ({
 
           {/* Ledger Table */}
           <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-900 text-white font-bold uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-4">Receipt / Txn Ref</th>
-                  <th className="py-3 px-4">Contributor</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Contribution</th>
-                  <th className="py-3 px-4">Channel</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredDonations.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-8 text-slate-400">
-                      No ledger entries match the selected filters.
-                    </td>
+            {donations.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">
+                Loading donations...
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-900 text-white font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4">Receipt / Txn Ref</th>
+                    <th className="py-3 px-4">Contributor</th>
+                    <th className="py-3 px-4">Category</th>
+                    <th className="py-3 px-4">Contribution</th>
+                    <th className="py-3 px-4">Channel</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Action</th>
                   </tr>
-                ) : (
-                  filteredDonations.map((don) => (
-                    <tr key={don.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
-                        {don.donationNumber}
-                        <div className="text-[10px] text-slate-400 font-normal">
-                          {don.transactionRef || 'OFFICIAL_ESCROW'}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-slate-900 block">{don.donorName}</span>
-                        <span className="text-[10px] text-slate-500">{don.donorType}</span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">
-                          {don.targetCategory.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-700 font-mono">
-                        {don.amountEtb
-                          ? `ETB ${don.amountEtb.toLocaleString()}`
-                          : don.itemsDescription}
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-700 uppercase text-[11px]">
-                        {don.paymentMethod || 'Logistics'}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <StatusBadge status={don.status} />
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => setSelectedReceiptDonation(don)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-800 font-bold rounded-lg border border-slate-200 text-[11px] transition-colors"
-                        >
-                          Certificate
-                        </button>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {filteredDonations.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-slate-400">
+                        No ledger entries match the selected filters.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredDonations.map((don) => (
+                      <tr key={don.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                          {don.donationNumber}
+                          <div className="text-[10px] text-slate-400 font-normal">
+                            {don.transactionRef || 'OFFICIAL_ESCROW'}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-slate-900 block">{don.donorName}</span>
+                          <span className="text-[10px] text-slate-500">{don.donorType}</span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">
+                            {don.targetCategory ? don.targetCategory.replace('_', ' ') : 'GENERAL'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-emerald-700 font-mono">
+                          {don.amountEtb
+                            ? `ETB ${don.amountEtb.toLocaleString()}`
+                            : don.itemsDescription}
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-700 uppercase text-[11px]">
+                          {don.paymentMethod || 'Logistics'}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <StatusBadge status={don.status} />
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => setSelectedReceiptDonation(don)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-800 font-bold rounded-lg border border-slate-200 text-[11px] transition-colors"
+                          >
+                            Certificate
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
